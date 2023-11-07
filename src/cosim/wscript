@@ -22,7 +22,7 @@ def build(bld):
         'model/cosim-adapter-nicif.cc',
         'model/cosim-nicif.cc',
         'helper/cosim-helper.cc',
-        'helper/simbricks-trace-helper.cc',
+        'helper/simbricks-trace-helper.cpp',
         ]
 
     module_test = bld.create_ns3_module_test_library('cosim')
