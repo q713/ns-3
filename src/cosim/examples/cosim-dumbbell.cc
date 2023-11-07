@@ -32,6 +32,9 @@
 #include "ns3/simple-channel.h"
 #include "ns3/simple-net-device.h"
 #include "ns3/cosim.h"
+#include "ns3/config-store.h"
+#include "ns3/simbricks-trace-helper.h"
+
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("CosimDumbbellExample");
@@ -39,28 +42,40 @@ NS_LOG_COMPONENT_DEFINE ("CosimDumbbellExample");
 std::vector<std::string> cosimLeftPaths;
 std::vector<std::string> cosimRightPaths;
 
-
-bool AddCosimLeftPort (std::string arg)
+bool
+AddCosimLeftPort (std::string arg)
 {
   cosimLeftPaths.push_back (arg);
   return true;
 }
 
-bool AddCosimRightPort (std::string arg)
+bool
+AddCosimRightPort (std::string arg)
 {
   cosimRightPaths.push_back (arg);
   return true;
 }
 
+void
+ReplacementTimePrinter (std::ostream &os)
+{
+  os << Simulator::Now ().GetPicoSeconds () << "ps";
+}
 
+void
+ReplaceTimePrinter (void)
+{
+  LogSetTimePrinter (&ReplacementTimePrinter);
+}
 
 int
 main (int argc, char *argv[])
 {
   Time::SetResolution (Time::Unit::PS);
+  Packet::EnablePrinting ();
 
-  Time linkLatency(MilliSeconds (10));
-  DataRate linkRate("10Mb/s");
+  Time linkLatency (MilliSeconds (10));
+  DataRate linkRate ("10Mb/s");
   double ecnTh = 200000;
 
   CommandLine cmd (__FILE__);
@@ -68,35 +83,38 @@ main (int argc, char *argv[])
   cmd.AddValue ("LinkRate", "Link bandwidth", linkRate);
   cmd.AddValue ("EcnTh", "ECN Threshold queue size", ecnTh);
   cmd.AddValue ("CosimPortLeft", "Add a cosim ethernet port to the bridge",
-      MakeCallback (&AddCosimLeftPort));
+                MakeCallback (&AddCosimLeftPort));
   cmd.AddValue ("CosimPortRight", "Add a cosim ethernet port to the bridge",
-      MakeCallback (&AddCosimRightPort));
+                MakeCallback (&AddCosimRightPort));
   cmd.Parse (argc, argv);
 
-  //LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
-  //LogComponentEnable("BridgeNetDevice", LOG_LEVEL_ALL);
-  //LogComponentEnable("CosimDumbbellExample", LOG_LEVEL_ALL);
-  //LogComponentEnable("SimpleChannel", LOG_LEVEL_ALL);
-  //LogComponentEnable("SimpleNetDevice", LOG_LEVEL_INFO);
-  //LogComponentEnable ("RedQueueDisc", LOG_LEVEL_ALL);
-  //LogComponentEnable ("DropTailQueue", LOG_LEVEL_ALL);
-  //LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
-  //LogComponentEnable ("Queue", LOG_LEVEL_ALL);
-  //LogComponentEnable ("TrafficControlLayer", LOG_LEVEL_ALL);
+  LogComponentEnable ("SimBricksTraceHelper", LOG_LEVEL_ALL);
+  LogComponentEnable ("CosimNetDevice", LOG_LEVEL_ALL);
+  LogComponentEnable ("BridgeNetDevice", LOG_LEVEL_ALL);
+  LogComponentEnable ("CosimDumbbellExample", LOG_LEVEL_ALL);
+  LogComponentEnable ("SimpleChannel", LOG_LEVEL_ALL);
+  LogComponentEnable ("SimpleNetDevice", LOG_LEVEL_INFO);
+  LogComponentEnable ("RedQueueDisc", LOG_LEVEL_ALL);
+  LogComponentEnable ("DropTailQueue", LOG_LEVEL_ALL);
+  LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
+  LogComponentEnable ("Queue", LOG_LEVEL_ALL);
+  LogComponentEnable ("TrafficControlLayer", LOG_LEVEL_ALL);
+  LogComponentEnable ("Config", LOG_LEVEL_ALL);
 
-  LogComponentEnableAll(LOG_PREFIX_TIME);
-  LogComponentEnableAll(LOG_PREFIX_NODE);
+  LogComponentEnableAll (LOG_PREFIX_TIME);
+  //LogComponentEnableAll (LOG_PREFIX_NODE);
+
+  Simulator::Schedule (Seconds (0), &ReplaceTimePrinter);
 
   GlobalValue::Bind ("ChecksumEnabled", BooleanValue (true));
   //GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
 
-  
   NS_LOG_INFO ("Create Nodes");
   Ptr<Node> nodeLeft = CreateObject<Node> ();
   Ptr<Node> nodeRight = CreateObject<Node> ();
   NodeContainer nodes (nodeLeft);
-  nodes.Add(nodeRight);
-  NS_LOG_INFO ("Node Num: " << nodes.GetN());
+  nodes.Add (nodeRight);
+  NS_LOG_INFO ("Node Num: " << nodes.GetN ());
 
   NS_LOG_INFO ("Create BridgeDevice");
   Ptr<BridgeNetDevice> bridgeLeft = CreateObject<BridgeNetDevice> ();
@@ -110,9 +128,9 @@ main (int argc, char *argv[])
   Ptr<SimpleChannel> ptpChan = CreateObject<SimpleChannel> ();
 
   SimpleNetDeviceHelper pointToPointSR;
-  pointToPointSR.SetQueue("ns3::DevRedQueue", "MaxSize", StringValue("2666p"));
-  pointToPointSR.SetQueue("ns3::DevRedQueue", "MinTh", DoubleValue (ecnTh));
-  pointToPointSR.SetDeviceAttribute ("DataRate", DataRateValue(linkRate));
+  pointToPointSR.SetQueue ("ns3::DevRedQueue", "MaxSize", StringValue ("2666p"));
+  pointToPointSR.SetQueue ("ns3::DevRedQueue", "MinTh", DoubleValue (ecnTh));
+  pointToPointSR.SetDeviceAttribute ("DataRate", DataRateValue (linkRate));
   pointToPointSR.SetChannelAttribute ("Delay", TimeValue (linkLatency));
 
   //ptpChan->SetAttribute ("Delay", TimeValue (linkLatency));
@@ -127,7 +145,6 @@ main (int argc, char *argv[])
 
   NetDeviceContainer ptpDev = pointToPointSR.Install (nodes, ptpChan);
 
- 
   //ptpDevLeft->SetAttribute ("DataRate", DataRateValue(linkRate));
   //ptpDevRight->SetAttribute ("DataRate", DataRateValue(linkRate));
   //ptpDevLeft->SetAddress (Mac48Address::Allocate ());
@@ -140,33 +157,48 @@ main (int argc, char *argv[])
   //nodeRight->AddDevice (ptpDevRight);
   //bridgeLeft->AddBridgePort (ptpDevLeft);
   //bridgeRight->AddBridgePort (ptpDevRight);
-  NS_LOG_INFO ("num node device" << nodeLeft->GetNDevices() << " type: ");
-  bridgeLeft->AddBridgePort (nodeLeft->GetDevice(1));
-  
-  bridgeRight->AddBridgePort (nodeRight->GetDevice(1));
+  NS_LOG_INFO ("num node device" << nodeLeft->GetNDevices () << " type: ");
+  bridgeLeft->AddBridgePort (nodeLeft->GetDevice (1));
+
+  bridgeRight->AddBridgePort (nodeRight->GetDevice (1));
 
   NS_LOG_INFO ("Create CosimDevices and add them to bridge");
-  NS_LOG_INFO("cosim path :" << cosimLeftPaths[0]);
-  
-  for (std::string cpp : cosimLeftPaths) {
-    Ptr<CosimNetDevice> device = CreateObject<CosimNetDevice> ();
-    device->SetAttribute ("UnixSocket", StringValue (cpp));
-    nodeLeft->AddDevice (device);
-    bridgeLeft->AddBridgePort (device);
-    device->Start ();
-  }
-  for (std::string cpp : cosimRightPaths) {
-    Ptr<CosimNetDevice> device = CreateObject<CosimNetDevice> ();
-    device->SetAttribute ("UnixSocket", StringValue (cpp));
-    nodeRight->AddDevice (device);
-    bridgeRight->AddBridgePort (device);
-    device->Start ();
-  }
+  NS_LOG_INFO ("cosim path :" << cosimLeftPaths[0]);
 
-  
+  for (std::string cpp : cosimLeftPaths)
+    {
+      Ptr<CosimNetDevice> device = CreateObject<CosimNetDevice> ();
+      device->SetAttribute ("UnixSocket", StringValue (cpp));
+      nodeLeft->AddDevice (device);
+      bridgeLeft->AddBridgePort (device);
+      device->Start ();
+    }
+  for (std::string cpp : cosimRightPaths)
+    {
+      Ptr<CosimNetDevice> device = CreateObject<CosimNetDevice> ();
+      device->SetAttribute ("UnixSocket", StringValue (cpp));
+      nodeRight->AddDevice (device);
+      bridgeRight->AddBridgePort (device);
+      device->Start ();
+    }
+
+  // Enable SimBricks Tracing
+  SimBricksTraceHelper simBricksTraceHelper;
+  Ptr<OutputStreamWrapper> outStream = simBricksTraceHelper.CreateFileStream (
+      "/local/jakobg/tracing-experiments/wrkdir/ns3-log-pipe.pipe");
+  simBricksTraceHelper.EnableAsciiLoggingForNodeContainer (outStream, nodes, "/$ns3::NodeListPriv");
+
+  // Print Ns3 Config to a file
+  //Config::SetDefault ("ns3::ConfigStore::Filename",
+  //                    StringValue ("/local/jakobg/tracing-experiments/wrkdir/config.txt"));
+  //Config::SetDefault ("ns3::ConfigStore::FileFormat", StringValue ("RawText"));
+  //Config::SetDefault ("ns3::ConfigStore::Mode", StringValue ("Save"));
+  //ConfigStore configStore;
+  //configStore.ConfigureDefaults ();
+  //configStore.ConfigureAttributes ();
+
   NS_LOG_INFO ("Run Emulation.");
   Simulator::Run ();
-
 
   Simulator::Destroy ();
   NS_LOG_INFO ("Done.");

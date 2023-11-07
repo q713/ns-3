@@ -26,6 +26,7 @@
 #ifndef COSIM_H
 #define COSIM_H
 
+#include "ns3/traced-callback.h"
 #include "ns3/net-device.h"
 #include "ns3/nstime.h"
 #include "cosim-adapter.h"
@@ -68,8 +69,9 @@ public:
   virtual bool IsBridge (void) const override;
   virtual bool IsPointToPoint (void) const override;
 
-  virtual bool Send (Ptr<Packet> packet, const Address& dest, uint16_t protocolNumber) override;
-  virtual bool SendFrom (Ptr<Packet> packet, const Address& source, const Address& dest, uint16_t protocolNumber) override;
+  virtual bool Send (Ptr<Packet> packet, const Address &dest, uint16_t protocolNumber) override;
+  virtual bool SendFrom (Ptr<Packet> packet, const Address &source, const Address &dest,
+                         uint16_t protocolNumber) override;
 
   virtual Ptr<Node> GetNode (void) const override;
   virtual void SetNode (Ptr<Node> node) override;
@@ -91,7 +93,6 @@ private:
   Time m_a_ethLatency;
   int m_a_sync;
 
-
   uint16_t m_mtu;
   uint32_t m_ifIndex;
   /* this is unused: but necessary for ns-3 */
@@ -100,13 +101,18 @@ private:
   NetDevice::ReceiveCallback m_rxCallback;
   NetDevice::PromiscReceiveCallback m_promiscRxCallback;
 
+  TracedCallback<Ptr<const Packet>> m_rxPacketFromAdapterTrace;
+  TracedCallback<Ptr<const Packet>> m_txPacketToNetworkTrace;
+
+  TracedCallback<Ptr<const Packet>> m_rxPacketFromNetworkTrace;
+  TracedCallback<Ptr<const Packet>> m_txPacketToAdapterTrace;
+
+  TracedCallback<Ptr<const Packet>> m_dropPacketTrace;
+
   void AdapterRx (Ptr<Packet> packet);
   void RxInContext (Ptr<Packet> packet);
 };
 
-
-
-}
+} // namespace ns3
 
 #endif /* COSIM_H */
-
