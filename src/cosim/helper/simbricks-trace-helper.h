@@ -35,7 +35,19 @@ class SimBricksTraceHelper
                                    const std::string &context, Ptr<const Packet> p,
                                    const std::string &prefix);
 
+  // TODO: add functionality to specify more fine grained which packets shall be
+  //       logged and which not --> by port and or ip
+
 public:
+  SimBricksTraceHelper(Time::Unit time_unit) {
+    //
+    // Our default trace sinks are going to use packet printing, so we have to
+    // make sure that is turned on.
+    //
+    Time::SetResolution (time_unit);
+    Packet::EnablePrinting ();
+  }
+
   Ptr<OutputStreamWrapper> CreateFileStream (std::string filename,
                                              std::ios::openmode filemode = std::ios::out);
 

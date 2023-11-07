@@ -81,12 +81,6 @@ SimBricksTraceHelper::EnableAsciiLoggingForSimpleNetDevice (Ptr<OutputStreamWrap
                                                             Ptr<SimpleNetDevice> simpleNetDevice,
                                                             const std::string path_prefix)
 {
-  //
-  // Our default trace sinks are going to use packet printing, so we have to
-  // make sure that is turned on.
-  //
-  Packet::EnablePrinting ();
-
   NS_ABORT_MSG_IF (outStream == 0,
                    "SimBricksTraceHelper::EnableAsciiLoggingForSimpleNetDevice: outStream is null");
   NS_ABORT_MSG_IF (simpleNetDevice == 0,
@@ -145,12 +139,6 @@ SimBricksTraceHelper::EnableAsciiLoggingForCosimNetDevice (Ptr<OutputStreamWrapp
                                                            Ptr<CosimNetDevice> cosimNetDevice,
                                                            const std::string path_prefix)
 {
-  //
-  // Our default trace sinks are going to use packet printing, so we have to
-  // make sure that is turned on.
-  //
-  Packet::EnablePrinting ();
-
   NS_ABORT_MSG_IF (outStream == 0,
                    "SimBricksTraceHelper::EnableAsciiLoggingForCosimNetDevice: outStream is null");
   NS_ABORT_MSG_IF (cosimNetDevice == 0,

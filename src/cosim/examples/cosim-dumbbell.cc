@@ -41,6 +41,7 @@ NS_LOG_COMPONENT_DEFINE ("CosimDumbbellExample");
 
 std::vector<std::string> cosimLeftPaths;
 std::vector<std::string> cosimRightPaths;
+std::string trace_file_path = "";
 
 bool
 AddCosimLeftPort (std::string arg)
@@ -53,6 +54,12 @@ bool
 AddCosimRightPort (std::string arg)
 {
   cosimRightPaths.push_back (arg);
+  return true;
+}
+
+bool SetTraceFilePath(std::string arg)
+{
+  trace_file_path = arg;
   return true;
 }
 
@@ -71,9 +78,6 @@ ReplaceTimePrinter (void)
 int
 main (int argc, char *argv[])
 {
-  Time::SetResolution (Time::Unit::PS);
-  Packet::EnablePrinting ();
-
   Time linkLatency (MilliSeconds (10));
   DataRate linkRate ("10Mb/s");
   double ecnTh = 200000;
@@ -86,25 +90,26 @@ main (int argc, char *argv[])
                 MakeCallback (&AddCosimLeftPort));
   cmd.AddValue ("CosimPortRight", "Add a cosim ethernet port to the bridge",
                 MakeCallback (&AddCosimRightPort));
+  cmd.AddValue("EnableTracing", "Path to a file into which the trace shall be written",
+                MakeCallback (&SetTraceFilePath));
   cmd.Parse (argc, argv);
 
-  LogComponentEnable ("SimBricksTraceHelper", LOG_LEVEL_ALL);
-  LogComponentEnable ("CosimNetDevice", LOG_LEVEL_ALL);
-  LogComponentEnable ("BridgeNetDevice", LOG_LEVEL_ALL);
-  LogComponentEnable ("CosimDumbbellExample", LOG_LEVEL_ALL);
-  LogComponentEnable ("SimpleChannel", LOG_LEVEL_ALL);
-  LogComponentEnable ("SimpleNetDevice", LOG_LEVEL_INFO);
-  LogComponentEnable ("RedQueueDisc", LOG_LEVEL_ALL);
-  LogComponentEnable ("DropTailQueue", LOG_LEVEL_ALL);
-  LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
-  LogComponentEnable ("Queue", LOG_LEVEL_ALL);
-  LogComponentEnable ("TrafficControlLayer", LOG_LEVEL_ALL);
-  LogComponentEnable ("Config", LOG_LEVEL_ALL);
+  //LogComponentEnable ("SimBricksTraceHelper", LOG_LEVEL_ALL);
+  //LogComponentEnable ("CosimNetDevice", LOG_LEVEL_ALL);
+  //LogComponentEnable ("BridgeNetDevice", LOG_LEVEL_ALL);
+  //LogComponentEnable ("CosimDumbbellExample", LOG_LEVEL_ALL);
+  //LogComponentEnable ("SimpleChannel", LOG_LEVEL_ALL);
+  //LogComponentEnable ("SimpleNetDevice", LOG_LEVEL_INFO);
+  //LogComponentEnable ("RedQueueDisc", LOG_LEVEL_ALL);
+  //LogComponentEnable ("DropTailQueue", LOG_LEVEL_ALL);
+  //LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
+  //LogComponentEnable ("Queue", LOG_LEVEL_ALL);
+  //LogComponentEnable ("TrafficControlLayer", LOG_LEVEL_ALL);
+  //LogComponentEnable ("Config", LOG_LEVEL_ALL);
 
-  LogComponentEnableAll (LOG_PREFIX_TIME);
+  //LogComponentEnableAll (LOG_PREFIX_TIME);
   //LogComponentEnableAll (LOG_PREFIX_NODE);
-
-  Simulator::Schedule (Seconds (0), &ReplaceTimePrinter);
+  //Simulator::Schedule (Seconds (0), &ReplaceTimePrinter);
 
   GlobalValue::Bind ("ChecksumEnabled", BooleanValue (true));
   //GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
@@ -183,10 +188,12 @@ main (int argc, char *argv[])
     }
 
   // Enable SimBricks Tracing
-  SimBricksTraceHelper simBricksTraceHelper;
-  Ptr<OutputStreamWrapper> outStream = simBricksTraceHelper.CreateFileStream (
-      "/local/jakobg/tracing-experiments/wrkdir/ns3-log-pipe.pipe");
-  simBricksTraceHelper.EnableAsciiLoggingForNodeContainer (outStream, nodes, "/$ns3::NodeListPriv");
+  SimBricksTraceHelper simBricksTraceHelper {Time::Unit::PS};
+  if (not trace_file_path.empty())
+    {
+      Ptr<OutputStreamWrapper> outStream = simBricksTraceHelper.CreateFileStream (trace_file_path);
+      simBricksTraceHelper.EnableAsciiLoggingForNodeContainer (outStream, nodes, "/$ns3::NodeListPriv");
+    }
 
   // Print Ns3 Config to a file
   //Config::SetDefault ("ns3::ConfigStore::Filename",
