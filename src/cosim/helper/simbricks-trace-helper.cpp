@@ -20,6 +20,7 @@
 
 #include "ns3/ipv4-header.h"
 #include "ns3/ethernet-header.h"
+#include "ns3/arp-header.h"
 
 namespace ns3 {
 
@@ -38,13 +39,13 @@ SimBricksTraceHelper::CreateFileStream (std::string filename, std::ios::openmode
 void
 SimBricksTraceHelper::PrintPacketToStream (bool manual_eth, bool manual_ip,
                                            Ptr<OutputStreamWrapper> stream,
-                                           const std::string &context, Ptr<const Packet> p,
+                                           const std::string &context, Ptr<const Packet> packet,
                                            const std::string &prefix)
 {
   NS_ABORT_MSG_IF (stream == 0, "SimBricksTraceHelper::PrintPacketToStreamManual stream is null");
-  NS_ABORT_MSG_IF (p == 0, "SimBricksTraceHelper::PrintPacketToStreamManual packet is null");
+  NS_ABORT_MSG_IF (packet == 0, "SimBricksTraceHelper::PrintPacketToStreamManual packet is null");
 
-  NS_LOG_FUNCTION (stream << *p << context << prefix);
+  NS_LOG_FUNCTION (stream << *packet << context << prefix);
 
   std::ostream &out = *(stream->GetStream ());
   out << prefix;
@@ -54,17 +55,25 @@ SimBricksTraceHelper::PrintPacketToStream (bool manual_eth, bool manual_ip,
   if (manual_eth)
     {
       EthernetHeader eth_header;
-      if (p->PeekHeader (eth_header))
+      if (packet->PeekHeader (eth_header))
         {
           out << " ns3::EthernetHeader(";
           eth_header.Print (out);
+          out << ")";
+        }
+
+      ArpHeader arp_header;
+      if (packet->PeekHeader (arp_header))
+        {
+          out << " ns3::ArpHeader(";
+          arp_header.Print (out);
           out << ")";
         }
     }
   if (manual_ip)
     {
       Ipv4Header ip_header;
-      if (p->PeekHeader (ip_header))
+      if (packet->PeekHeader (ip_header))
         {
           out << " ns3::Ipv4Header(";
           ip_header.Print (out);
@@ -72,7 +81,7 @@ SimBricksTraceHelper::PrintPacketToStream (bool manual_eth, bool manual_ip,
         }
     }
 
-  out << " " << *p;
+  out << " " << *packet;
   out << std::endl;
 }
 

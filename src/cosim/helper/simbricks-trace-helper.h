@@ -32,7 +32,7 @@ namespace ns3 {
 class SimBricksTraceHelper
 {
   static void PrintPacketToStream (bool manual_eth, bool manual_ip, Ptr<OutputStreamWrapper> stream,
-                                   const std::string &context, Ptr<const Packet> p,
+                                   const std::string &context, Ptr<const Packet> packet,
                                    const std::string &prefix);
 
   // TODO: add functionality to specify more fine grained which packets shall be
