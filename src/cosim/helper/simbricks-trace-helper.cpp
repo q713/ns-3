@@ -26,6 +26,61 @@ namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("SimBricksTraceHelper");
 
+TypeId
+TraceTag::GetTypeId (void)
+{
+  static TypeId tid =
+      TypeId ("ns3::TraceTag")
+          .SetParent<Tag> ()
+          .AddConstructor<TraceTag> ()
+          .AddAttribute ("InterestingValue",
+                         "A bool flag indicating if a packet is interesting for tracing",
+                         EmptyAttributeValue (), MakeBooleanAccessor (&TraceTag::IsInteresting),
+                         MakeBooleanChecker ());
+  return tid;
+}
+
+TypeId
+TraceTag::GetInstanceTypeId (void) const
+{
+  return GetTypeId ();
+}
+uint32_t
+TraceTag::GetSerializedSize (void) const
+{
+  return 1;
+}
+void
+TraceTag::Serialize (TagBuffer i) const
+{
+  i.WriteU8 (m_IsInteresting);
+}
+void
+TraceTag::Deserialize (TagBuffer i)
+{
+  m_IsInteresting = (i.ReadU8 ()) != 0;
+}
+void
+TraceTag::Print (std::ostream &os) const
+{
+  os << "interesting=" << (m_IsInteresting ? "true" : "false");
+}
+void
+TraceTag::SetInteressting ()
+{
+  m_IsInteresting = true;
+}
+void
+TraceTag::SetUninteresting ()
+{
+  m_IsInteresting = false;
+}
+bool
+TraceTag::IsInteresting (void) const
+{
+  return m_IsInteresting;
+}
+
 Ptr<OutputStreamWrapper>
 SimBricksTraceHelper::CreateFileStream (std::string filename, std::ios::openmode filemode)
 {
@@ -40,17 +95,25 @@ void
 SimBricksTraceHelper::PrintPacketToStream (bool manual_eth, bool manual_ip,
                                            Ptr<OutputStreamWrapper> stream,
                                            const std::string &context, Ptr<const Packet> packet,
-                                           const std::string &prefix)
+                                           const std::string &prefix, bool mark_as_interesting)
 {
   NS_ABORT_MSG_IF (stream == 0, "SimBricksTraceHelper::PrintPacketToStreamManual stream is null");
   NS_ABORT_MSG_IF (packet == 0, "SimBricksTraceHelper::PrintPacketToStreamManual packet is null");
 
   NS_LOG_FUNCTION (stream << *packet << context << prefix);
 
+  bool interesting = mark_as_interesting or IsPacketInteresting (packet);
+  if (interesting)
+    {
+      MarkAsIntersting (packet);
+    }
+
   std::ostream &out = *(stream->GetStream ());
   out << prefix;
   out << " " << Simulator::Now ().GetPicoSeconds ();
   out << " " << context;
+  out << " Packet-Uid=" << packet->GetUid ();
+  out << " Intersting=" << (interesting ? "true" : "false");
 
   if (manual_eth)
     {
@@ -98,55 +161,61 @@ SimBricksTraceHelper::EnableAsciiLoggingForSimpleNetDevice (Ptr<OutputStreamWrap
   std::ostringstream config_path_prefix;
   config_path_prefix << path_prefix << "/$ns3::SimpleNetDevice";
 
-  //Ptr<Queue<Packet>> queue = simpleNetDevice->GetObject<Queue<Packet>>();
-  //queue->
-
   std::ostringstream config_path;
   config_path << config_path_prefix.str () << "/PhyRxDrop";
-  Config::Connect (config_path.str (),
-                   MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext, outStream));
+  Config::Connect (
+      config_path.str (),
+      MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext, outStream, false));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/RxPacketFromNetwork";
   Config::Connect (config_path.str (),
-                   MakeBoundCallback (&SimBricksTraceHelper::EnqueueSinkWithContext<true, false>, outStream));
+                   MakeBoundCallback (&SimBricksTraceHelper::EnqueueSinkWithContext<true, false>,
+                                      outStream, false));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/TxPacketToAttachedDevice";
   Config::Connect (config_path.str (),
-                   MakeBoundCallback (&SimBricksTraceHelper::DequeueSinkWithContext<true, false>, outStream));
+                   MakeBoundCallback (&SimBricksTraceHelper::DequeueSinkWithContext<true, false>,
+                                      outStream, false));
 
   config_path_prefix << "/TxQueue";
   config_path.str ("");
   config_path << config_path_prefix.str () << "/Enqueue";
   Config::Connect (config_path.str (),
-                   MakeBoundCallback (&SimBricksTraceHelper::EnqueueSinkWithContext<true, false>, outStream));
+                   MakeBoundCallback (&SimBricksTraceHelper::EnqueueSinkWithContext<true, false>,
+                                      outStream, false));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/Dequeue";
   Config::Connect (config_path.str (),
-                   MakeBoundCallback (&SimBricksTraceHelper::DequeueSinkWithContext<true, false>, outStream));
+                   MakeBoundCallback (&SimBricksTraceHelper::DequeueSinkWithContext<true, false>,
+                                      outStream, false));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/Drop";
-  Config::Connect (config_path.str (),
-                   MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext, outStream));
+  Config::Connect (
+      config_path.str (),
+      MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext, outStream, false));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/DropBeforeEnqueue";
-  Config::Connect (config_path.str (),
-                   MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext, outStream));
+  Config::Connect (
+      config_path.str (),
+      MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext, outStream, false));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/DropAfterDequeue";
-  Config::Connect (config_path.str (),
-                   MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext, outStream));
+  Config::Connect (
+      config_path.str (),
+      MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext, outStream, false));
 }
 
 void
 SimBricksTraceHelper::EnableAsciiLoggingForCosimNetDevice (Ptr<OutputStreamWrapper> outStream,
                                                            Ptr<CosimNetDevice> cosimNetDevice,
-                                                           const std::string path_prefix)
+                                                           const std::string path_prefix,
+                                                           bool mark_as_interesting)
 {
   NS_ABORT_MSG_IF (outStream == 0,
                    "SimBricksTraceHelper::EnableAsciiLoggingForCosimNetDevice: outStream is null");
@@ -158,39 +227,40 @@ SimBricksTraceHelper::EnableAsciiLoggingForCosimNetDevice (Ptr<OutputStreamWrapp
 
   std::ostringstream config_path;
   config_path << config_path_prefix.str () << "/RxPacketFromAdapter";
-  Config::Connect (
-      config_path.str (),
-      MakeBoundCallback (&SimBricksTraceHelper::EnqueueSinkWithContext<true, true>, outStream));
+  Config::Connect (config_path.str (),
+                   MakeBoundCallback (&SimBricksTraceHelper::EnqueueSinkWithContext<true, true>,
+                                      outStream, mark_as_interesting));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/TxPacketToNetwork";
-  Config::Connect (
-      config_path.str (),
-      MakeBoundCallback (&SimBricksTraceHelper::DequeueSinkWithContext<true, true>, outStream));
+  Config::Connect (config_path.str (),
+                   MakeBoundCallback (&SimBricksTraceHelper::DequeueSinkWithContext<true, true>,
+                                      outStream, false));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/RxPacketFromNetwork";
-  Config::Connect (
-      config_path.str (),
-      MakeBoundCallback (&SimBricksTraceHelper::EnqueueSinkWithContext<true, false>, outStream));
+  Config::Connect (config_path.str (),
+                   MakeBoundCallback (&SimBricksTraceHelper::EnqueueSinkWithContext<true, false>,
+                                      outStream, false));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/TxPacketToAdapter";
-  Config::Connect (
-      config_path.str (),
-      MakeBoundCallback (&SimBricksTraceHelper::DequeueSinkWithContext<false, false>, outStream));
+  Config::Connect (config_path.str (),
+                   MakeBoundCallback (&SimBricksTraceHelper::DequeueSinkWithContext<false, false>,
+                                      outStream, false));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/DropPacket";
-  Config::Connect (
-      config_path.str (),
-      MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext<false, false>, outStream));
+  Config::Connect (config_path.str (),
+                   MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext<false, false>,
+                                      outStream, false));
 }
 
 void
 SimBricksTraceHelper::EnableAsciiLoggingForNetDevice (Ptr<OutputStreamWrapper> outStream,
                                                       Ptr<NetDevice> netDevice,
-                                                      const std::string path_prefix)
+                                                      const std::string path_prefix,
+                                                      bool mark_as_interesting)
 {
   NS_ABORT_MSG_IF (outStream == 0,
                    "SimBricksTraceHelper::EnableAsciiLoggingForNetDevice: outStream is null");
@@ -210,7 +280,8 @@ SimBricksTraceHelper::EnableAsciiLoggingForNetDevice (Ptr<OutputStreamWrapper> o
     Ptr<CosimNetDevice> cosimNetDevice = netDevice->GetObject<CosimNetDevice> ();
     if (cosimNetDevice != 0)
       {
-        EnableAsciiLoggingForCosimNetDevice (outStream, cosimNetDevice, path_prefix);
+        EnableAsciiLoggingForCosimNetDevice (outStream, cosimNetDevice, path_prefix,
+                                             mark_as_interesting);
         return;
       }
   }
@@ -222,9 +293,9 @@ SimBricksTraceHelper::EnableAsciiLoggingForNetDevice (Ptr<OutputStreamWrapper> o
 }
 
 void
-SimBricksTraceHelper::EnableAsciiLoggingForNodeContainer (Ptr<OutputStreamWrapper> outStream,
-                                                          NodeContainer &nodes,
-                                                          const std::string prefix)
+SimBricksTraceHelper::EnableAsciiLoggingForNodeContainer (
+    Ptr<OutputStreamWrapper> outStream, NodeContainer &nodes, const std::string prefix,
+    const std::set<std::pair<int, int>> &interesting_devices)
 {
   NS_ABORT_MSG_IF (outStream == 0,
                    "SimBricksTraceHelper::EnableAsciiLoggingForNodeContainer: outStream is null");
@@ -243,7 +314,9 @@ SimBricksTraceHelper::EnableAsciiLoggingForNodeContainer (Ptr<OutputStreamWrappe
           std::stringstream prefix_path;
           prefix_path << prefix << "/NodeList/" << nodeid << "/$ns3::Node/DeviceList/" << device_id;
 
-          EnableAsciiLoggingForNetDevice (outStream, netDevice, prefix_path.str ());
+          const bool interesting =
+              interesting_devices.find ({nodeid, device_id}) != interesting_devices.end ();
+          EnableAsciiLoggingForNetDevice (outStream, netDevice, prefix_path.str (), interesting);
         }
     }
 }

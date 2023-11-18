@@ -41,7 +41,6 @@ NS_LOG_COMPONENT_DEFINE ("CosimDumbbellExample");
 
 std::vector<std::string> cosimLeftPaths;
 std::vector<std::string> cosimRightPaths;
-std::string trace_file_path = "";
 
 bool
 AddCosimLeftPort (std::string arg)
@@ -54,12 +53,6 @@ bool
 AddCosimRightPort (std::string arg)
 {
   cosimRightPaths.push_back (arg);
-  return true;
-}
-
-bool SetTraceFilePath(std::string arg)
-{
-  trace_file_path = arg;
   return true;
 }
 
@@ -81,6 +74,7 @@ main (int argc, char *argv[])
   Time linkLatency (MilliSeconds (10));
   DataRate linkRate ("10Mb/s");
   double ecnTh = 200000;
+  std::string trace_file_path = "";
 
   CommandLine cmd (__FILE__);
   cmd.AddValue ("LinkLatency", "Propagation delay through link", linkLatency);
@@ -90,8 +84,8 @@ main (int argc, char *argv[])
                 MakeCallback (&AddCosimLeftPort));
   cmd.AddValue ("CosimPortRight", "Add a cosim ethernet port to the bridge",
                 MakeCallback (&AddCosimRightPort));
-  cmd.AddValue("EnableTracing", "Path to a file into which the trace shall be written",
-                MakeCallback (&SetTraceFilePath));
+  cmd.AddValue ("EnableTracing", "Path to a file into which the trace shall be written",
+                trace_file_path);
   cmd.Parse (argc, argv);
 
   //LogComponentEnable ("SimBricksTraceHelper", LOG_LEVEL_ALL);
@@ -188,11 +182,13 @@ main (int argc, char *argv[])
     }
 
   // Enable SimBricks Tracing
-  SimBricksTraceHelper simBricksTraceHelper {Time::Unit::PS};
-  if (not trace_file_path.empty())
+  std::set<std::pair<int, int>> interesting_node_device_pairs{{0, 2}, {1, 2}};
+  SimBricksTraceHelper &simBricksTraceHelper = SimBricksTraceHelper::GetTracehelper ();
+  if (not trace_file_path.empty ())
     {
       Ptr<OutputStreamWrapper> outStream = simBricksTraceHelper.CreateFileStream (trace_file_path);
-      simBricksTraceHelper.EnableAsciiLoggingForNodeContainer (outStream, nodes, "/$ns3::NodeListPriv");
+      simBricksTraceHelper.EnableAsciiLoggingForNodeContainer (
+          outStream, nodes, "/$ns3::NodeListPriv", interesting_node_device_pairs);
     }
 
   // Print Ns3 Config to a file

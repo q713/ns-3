@@ -19,7 +19,10 @@
 #ifndef SIMBRICKS_TRACE_HELPER_H
 #define SIMBRICKS_TRACE_HELPER_H
 
+#include <unordered_set>
+
 #include "ns3/abort.h"
+#include "ns3/tag.h"
 #include "ns3/core-module.h"
 #include "ns3/simple-net-device.h"
 #include "ns3/cosim.h"
@@ -29,23 +32,79 @@
 
 namespace ns3 {
 
+class TraceTag : public Tag
+{
+public:
+  static TypeId GetTypeId (void);
+  virtual TypeId GetInstanceTypeId (void) const;
+  virtual uint32_t GetSerializedSize (void) const;
+  virtual void Serialize (TagBuffer i) const;
+  virtual void Deserialize (TagBuffer i);
+  virtual void Print (std::ostream &os) const;
+
+  // these are our accessors to our tag structure
+  void SetInteressting ();
+  void SetUninteresting ();
+  bool IsInteresting (void) const;
+
+private:
+  bool m_IsInteresting = false;
+};
+
 class SimBricksTraceHelper
 {
-  static void PrintPacketToStream (bool manual_eth, bool manual_ip, Ptr<OutputStreamWrapper> stream,
-                                   const std::string &context, Ptr<const Packet> packet,
-                                   const std::string &prefix);
+  std::unordered_set<uint64_t> m_InterstingPacketUids;
 
-  // TODO: add functionality to specify more fine grained which packets shall be
-  //       logged and which not --> by port and or ip
+  bool
+  IsPacketInteresting (Ptr<const Packet> packet)
+  {
+    NS_ABORT_MSG_IF (packet == 0, "SimBricksTraceHelper::IsPacketInteresting packet is null");
 
-public:
-  SimBricksTraceHelper(Time::Unit time_unit) {
+    TraceTag traceTag;
+    if (packet->PeekPacketTag (traceTag))
+      {
+        return traceTag.IsInteresting ();
+      }
+
+    return false;
+  }
+
+  void
+  MarkAsIntersting (Ptr<const Packet> packet)
+  {
+    NS_ABORT_MSG_IF (packet == 0, "SimBricksTraceHelper::MarkAsIntersting packet is null");
+
+    TraceTag traceTag;
+    if (packet->PeekPacketTag (traceTag))
+      {
+        traceTag.SetInteressting ();
+        return;
+      }
+    traceTag.SetInteressting ();
+    packet->AddPacketTag (traceTag);
+  }
+
+  void PrintPacketToStream (bool manual_eth, bool manual_ip, Ptr<OutputStreamWrapper> stream,
+                            const std::string &context, Ptr<const Packet> packet,
+                            const std::string &prefix, bool mark_as_interesting);
+
+  SimBricksTraceHelper (Time::Unit time_unit)
+  {
     //
     // Our default trace sinks are going to use packet printing, so we have to
     // make sure that is turned on.
     //
     Time::SetResolution (time_unit);
     Packet::EnablePrinting ();
+  }
+
+public:
+  static SimBricksTraceHelper &
+  GetTracehelper ()
+  {
+    // Single Instance of the trace helper
+    static SimBricksTraceHelper simBricksTraceHelper{Time::Unit::PS};
+    return simBricksTraceHelper;
   }
 
   Ptr<OutputStreamWrapper> CreateFileStream (std::string filename,
@@ -57,35 +116,41 @@ public:
 
   template <bool Manual_Eth = false, bool Manual_Ip = false>
   static void
-  DropSinkWithContext (Ptr<OutputStreamWrapper> stream, std::string context, Ptr<const Packet> p)
+  DropSinkWithContext (Ptr<OutputStreamWrapper> stream, bool mark_as_interesting,
+                       std::string context, Ptr<const Packet> p)
   {
     NS_ABORT_MSG_IF (stream == 0, "SimBricksTraceHelper::DropSinkWithContext stream is null");
     NS_ABORT_MSG_IF (p == 0, "SimBricksTraceHelper::DropSinkWithContext packet is null");
 
     const std::string prefix = "d ";
-    SimBricksTraceHelper::PrintPacketToStream (Manual_Eth, Manual_Ip, stream, context, p, prefix);
+    SimBricksTraceHelper::GetTracehelper ().PrintPacketToStream (
+        Manual_Eth, Manual_Ip, stream, context, p, prefix, mark_as_interesting);
   }
 
   template <bool Manual_Eth = false, bool Manual_Ip = false>
   static void
-  EnqueueSinkWithContext (Ptr<OutputStreamWrapper> stream, std::string context, Ptr<const Packet> p)
+  EnqueueSinkWithContext (Ptr<OutputStreamWrapper> stream, bool mark_as_interesting,
+                          std::string context, Ptr<const Packet> p)
   {
     NS_ABORT_MSG_IF (stream == 0, "SimBricksTraceHelper::EnqueueSinkWithContext stream is null");
     NS_ABORT_MSG_IF (p == 0, "SimBricksTraceHelper::EnqueueSinkWithContext packet is null");
 
     const std::string prefix = "+ ";
-    SimBricksTraceHelper::PrintPacketToStream (Manual_Eth, Manual_Ip, stream, context, p, prefix);
+    SimBricksTraceHelper::GetTracehelper ().PrintPacketToStream (
+        Manual_Eth, Manual_Ip, stream, context, p, prefix, mark_as_interesting);
   }
 
   template <bool Manual_Eth = false, bool Manual_Ip = false>
   static void
-  DequeueSinkWithContext (Ptr<OutputStreamWrapper> stream, std::string context, Ptr<const Packet> p)
+  DequeueSinkWithContext (Ptr<OutputStreamWrapper> stream, bool mark_as_interesting,
+                          std::string context, Ptr<const Packet> p)
   {
     NS_ABORT_MSG_IF (stream == 0, "SimBricksTraceHelper::DequeueSinkWithContext stream is null");
     NS_ABORT_MSG_IF (p == 0, "SimBricksTraceHelper::DequeueSinkWithContext packet is null");
 
     const std::string prefix = "- ";
-    SimBricksTraceHelper::PrintPacketToStream (Manual_Eth, Manual_Ip, stream, context, p, prefix);
+    SimBricksTraceHelper::GetTracehelper ().PrintPacketToStream (
+        Manual_Eth, Manual_Ip, stream, context, p, prefix, mark_as_interesting);
   }
 
   //
@@ -98,13 +163,17 @@ public:
 
   void EnableAsciiLoggingForCosimNetDevice (Ptr<OutputStreamWrapper> outStream,
                                             Ptr<CosimNetDevice> cosimNetDevice,
-                                            const std::string path_prefix = "");
+                                            const std::string path_prefix = "",
+                                            bool mark_as_interesting = false);
 
   void EnableAsciiLoggingForNetDevice (Ptr<OutputStreamWrapper> outStream, Ptr<NetDevice> netDevice,
-                                       const std::string path_prefix = "");
+                                       const std::string path_prefix = "",
+                                       bool mark_as_interesting = false);
 
-  void EnableAsciiLoggingForNodeContainer (Ptr<OutputStreamWrapper> outStream, NodeContainer &nodes,
-                                           const std::string prefix = "");
+  void
+  EnableAsciiLoggingForNodeContainer (Ptr<OutputStreamWrapper> outStream, NodeContainer &nodes,
+                                      const std::string prefix,
+                                      const std::set<std::pair<int, int>> &interesting_devices);
 };
 
 } // namespace ns3
