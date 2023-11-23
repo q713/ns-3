@@ -43,7 +43,7 @@ class CosimAdapter
 public:
   struct SimbricksBaseIfParams m_bifparam;
   Time m_pollDelay;
-  
+
   CosimAdapter ();
   ~CosimAdapter ();
 
@@ -55,6 +55,9 @@ public:
   void SetReceiveCallback (RxCallback cb);
   bool Transmit (Ptr<const Packet> packet);
 
+  // typedef Callback<void, uint64_t> SendSyncCallback;
+  // void SetSendSyncCallback (SendSyncCallback cb);
+
 private:
   struct SimbricksNetIf *m_nsif;
   bool m_isConnected;
@@ -62,6 +65,8 @@ private:
   Time m_nextTime;
   EventId m_syncTxEvent;
   EventId m_pollEvent;
+
+  //SendSyncCallback m_sendSyncCallback;
 
   void ReceivedPacket (const void *buf, size_t len);
   volatile union SimbricksProtoNetMsg *AllocTx ();

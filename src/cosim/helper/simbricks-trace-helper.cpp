@@ -254,6 +254,11 @@ SimBricksTraceHelper::EnableAsciiLoggingForCosimNetDevice (Ptr<OutputStreamWrapp
   Config::Connect (config_path.str (),
                    MakeBoundCallback (&SimBricksTraceHelper::DropSinkWithContext<false, false>,
                                       outStream, false));
+
+  // config_path.str ("");
+  // config_path << config_path_prefix.str () << "/SendSyncMessage";
+  // Config::Connect (config_path.str (),
+  //                  MakeBoundCallback (&SimBricksTraceHelper::SyncMessageSinkWithContext, outStream));
 }
 
 void

@@ -55,13 +55,13 @@ void CosimAdapter::Start ()
   int ret;
 
   NS_ABORT_MSG_IF (m_bifparam.sock_path == NULL, "SimbricksAdapter::Connect: unix socket"
-          " path empty");
+                                                 " path empty");
 
   ret = SimbricksNetIfInit(m_nsif, &m_bifparam, m_bifparam.sock_path, &sync);
 
   NS_ABORT_MSG_IF (ret != 0, "SimbricksAdapter::Connect: SimbricksNetIfInit failed");
   NS_ABORT_MSG_IF (m_bifparam.sync_mode && !sync,
-          "SimbricksAdapter::Connect: request for sync failed");
+                   "SimbricksAdapter::Connect: request for sync failed");
 
   if (m_bifparam.sync_mode)
     m_syncTxEvent = Simulator::ScheduleNow (&CosimAdapter::SendSyncEvent, this);
@@ -81,6 +81,11 @@ void CosimAdapter::SetReceiveCallback (RxCallback cb)
   m_rxCallback = cb;
 }
 
+// void CosimAdapter::SetSendSyncCallback (SendSyncCallback cb)
+// {
+//   m_sendSyncCallback = cb;
+// }
+
 bool CosimAdapter::Transmit (Ptr<const Packet> packet)
 {
   volatile union SimbricksProtoNetMsg *msg;
@@ -98,31 +103,31 @@ bool CosimAdapter::Transmit (Ptr<const Packet> packet)
   SimbricksNetIfOutSend(m_nsif, msg, SIMBRICKS_PROTO_NET_MSG_PACKET);
 
   if (m_bifparam.sync_mode) {
-    Simulator::Cancel (m_syncTxEvent);
-    m_syncTxEvent = Simulator::Schedule ( PicoSeconds (m_bifparam.sync_interval),
-            &CosimAdapter::SendSyncEvent, this);
-  }
+      Simulator::Cancel (m_syncTxEvent);
+      m_syncTxEvent = Simulator::Schedule ( PicoSeconds (m_bifparam.sync_interval),
+                                           &CosimAdapter::SendSyncEvent, this);
+    }
 
   return true;
 }
 
 void CosimAdapter::ReceivedPacket (const void *buf, size_t len)
-{ 
-    Ptr<Packet> packet = Create<Packet> (
-            reinterpret_cast<const uint8_t *> (buf), len);
-    m_rxCallback (packet);
+{
+  Ptr<Packet> packet = Create<Packet> (
+      reinterpret_cast<const uint8_t *> (buf), len);
+  m_rxCallback (packet);
 }
 
 volatile union SimbricksProtoNetMsg *CosimAdapter::AllocTx ()
 {
   volatile union SimbricksProtoNetMsg *msg;
   do {
-    msg = SimbricksNetIfOutAlloc (m_nsif, Simulator::Now ().ToInteger (Time::PS));
+      msg = SimbricksNetIfOutAlloc (m_nsif, Simulator::Now ().ToInteger (Time::PS));
   } while (!msg);
 
   //TODO: fix it to wait until alloc success
   NS_ABORT_MSG_IF (msg == NULL,
-          "SimbricksAdapter::AllocTx: SimbricksNetIfOutAlloc failed");
+                   "SimbricksAdapter::AllocTx: SimbricksNetIfOutAlloc failed");
   return msg;
 }
 
@@ -133,7 +138,7 @@ bool CosimAdapter::Poll ()
 
   msg = SimbricksNetIfInPoll (m_nsif, Simulator::Now ().ToInteger (Time::PS));
   m_nextTime = PicoSeconds (SimbricksNetIfInTimestamp (m_nsif));
-  
+
   if (!msg)
     return false;
 
@@ -148,7 +153,7 @@ bool CosimAdapter::Poll ()
 
     default:
       NS_ABORT_MSG ("CosimAdapter::Poll: unsupported message type " << ty);
-  }
+    }
 
   SimbricksNetIfInDone (m_nsif, msg);
   return true;
@@ -159,26 +164,27 @@ void CosimAdapter::PollEvent ()
   while (Poll ());
 
   if (m_bifparam.sync_mode){
-    while (m_nextTime <= Simulator::Now ())
-      Poll ();
+      while (m_nextTime <= Simulator::Now ())
+        Poll ();
 
-    m_pollEvent = Simulator::Schedule (m_nextTime -  Simulator::Now (),
-            &CosimAdapter::PollEvent, this);
-  } else {
-    m_pollEvent = Simulator::Schedule (m_pollDelay,
-            &CosimAdapter::PollEvent, this);
+      m_pollEvent = Simulator::Schedule (m_nextTime -  Simulator::Now (),
+                                         &CosimAdapter::PollEvent, this);
+    } else {
+      m_pollEvent = Simulator::Schedule (m_pollDelay,
+                                         &CosimAdapter::PollEvent, this);
 
-  }
+    }
 }
 
 void CosimAdapter::SendSyncEvent ()
 {
   volatile union SimbricksProtoNetMsg *msg = AllocTx ();
   NS_ABORT_MSG_IF (msg == NULL,
-          "SimbricksAdapter::AllocTx: SimbricksNetIfOutAlloc failed");
+                   "SimbricksAdapter::AllocTx: SimbricksNetIfOutAlloc failed");
 
   // msg->sync.own_type = SIMBRICKS_PROTO_NET_N2D_MSG_SYNC |
   //     SIMBRICKS_PROTO_NET_N2D_OWN_DEV;
+  // m_sendSyncCallback (m_nsif->base.out_timestamp);
   SimbricksBaseIfOutSend(&m_nsif->base, &msg->base, SIMBRICKS_PROTO_MSG_TYPE_SYNC);
 
   m_syncTxEvent = Simulator::Schedule ( PicoSeconds (m_bifparam.sync_interval), &CosimAdapter::SendSyncEvent, this);

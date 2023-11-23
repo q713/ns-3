@@ -153,6 +153,21 @@ public:
         Manual_Eth, Manual_Ip, stream, context, p, prefix, mark_as_interesting);
   }
 
+  //static void
+  //SyncMessageSinkWithContext (Ptr<OutputStreamWrapper> stream, std::string context,
+  //                            [[maybe_unused]] uint64_t old_timestamp, uint64_t new_timestamp)
+  //{
+  //  NS_ABORT_MSG_IF (stream == 0, "SimBricksTraceHelper::DropSinkWithContext stream is null");
+  //
+  //  std::ostream &out = *(stream->GetStream ());
+  //  out << "s ";
+  //  out << " " << Simulator::Now ().GetPicoSeconds ();
+  //  out << " " << context;
+  //  out << " sending sync message ";
+  //  out << std::to_string (new_timestamp)
+  //  out << std::endl;
+  //}
+
   //
   // Helper functions to make use of various trace sources within different components
   //

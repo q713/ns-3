@@ -27,6 +27,7 @@
 #define COSIM_H
 
 #include "ns3/traced-callback.h"
+#include "ns3/traced-value.h"
 #include "ns3/net-device.h"
 #include "ns3/nstime.h"
 #include "cosim-adapter.h"
@@ -108,6 +109,10 @@ private:
   TracedCallback<Ptr<const Packet>> m_txPacketToAdapterTrace;
 
   TracedCallback<Ptr<const Packet>> m_dropPacketTrace;
+
+  // TracedValue<uint64_t> m_sendSyncMessageTrace;
+
+  // void TraceSyncMessage (uint64_t timestamp);
 
   void AdapterRx (Ptr<Packet> packet);
   void RxInContext (Ptr<Packet> packet);

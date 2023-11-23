@@ -92,6 +92,10 @@ CosimNetDevice::GetTypeId (void)
                            "dropped by a CosimNetDevice",
                            MakeTraceSourceAccessor (&CosimNetDevice::m_dropPacketTrace),
                            "ns3::Packet::TracedCallback");
+  // .AddTraceSource ("SendSyncMessage",
+  //                  "Trace source indicating a sync message was send",
+  //                  MakeTraceSourceAccessor (&CosimNetDevice::m_sendSyncMessageTrace),
+  //                  "ns3::TracedValueCallback::Uint64");
 
   return tid;
 }
@@ -118,6 +122,7 @@ CosimNetDevice::Start ()
   m_adapter.m_bifparam.link_latency = m_a_ethLatency.ToInteger (Time::PS);
   m_adapter.m_bifparam.sync_mode = (enum SimbricksBaseIfSyncMode) m_a_sync;
   m_adapter.SetReceiveCallback (MakeCallback (&CosimNetDevice::AdapterRx, this));
+  // m_adapter.SetSendSyncCallback (MakeCallback (&CosimNetDevice::TraceSyncMessage, this));
   m_adapter.Start ();
 }
 
@@ -310,6 +315,11 @@ CosimNetDevice::SupportsSendFrom (void) const
   NS_LOG_FUNCTION_NOARGS ();
   return true;
 }
+
+// void CosimNetDevice::TraceSyncMessage (uint64_t timestamp)
+// {
+//   m_sendSyncMessageTrace = timestamp;
+// }
 
 void
 CosimNetDevice::AdapterRx (Ptr<Packet> packet)
