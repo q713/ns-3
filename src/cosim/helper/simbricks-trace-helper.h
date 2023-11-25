@@ -77,7 +77,9 @@ class SimBricksTraceHelper
     TraceTag traceTag;
     if (packet->PeekPacketTag (traceTag))
       {
-        traceTag.SetInteressting ();
+        NS_ABORT_MSG_IF (
+            not traceTag.IsInteresting (),
+            "SimBricksTraceHelper::MarkAsIntersting packet has tag but is not interesting");
         return;
       }
     traceTag.SetInteressting ();
