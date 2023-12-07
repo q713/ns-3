@@ -123,9 +123,6 @@ main (int argc, char *argv[])
   nodeLeft->AddDevice (bridgeLeft);
   nodeRight->AddDevice (bridgeRight);
 
-  NS_LOG_INFO ("Create simple channel link between the two");
-  Ptr<SimpleChannel> ptpChan = CreateObject<SimpleChannel> ();
-
   SimpleNetDeviceHelper pointToPointSR;
   pointToPointSR.SetQueue ("ns3::DevRedQueue", "MaxSize", StringValue ("2666p"));
   pointToPointSR.SetQueue ("ns3::DevRedQueue", "MinTh", DoubleValue (ecnTh));
@@ -142,7 +139,7 @@ main (int argc, char *argv[])
   //ptpDevRight = pointToPointSR.Install (nodeLeft, nodeRight).Get(1);
   //NetDeviceContainer ptpDev = pointToPointSR.Install (nodeLeft, nodeRight);
 
-  NetDeviceContainer ptpDev = pointToPointSR.Install (nodes, ptpChan);
+  NetDeviceContainer ptpDev = pointToPointSR.Install (nodes);
 
   //ptpDevLeft->SetAttribute ("DataRate", DataRateValue(linkRate));
   //ptpDevRight->SetAttribute ("DataRate", DataRateValue(linkRate));
