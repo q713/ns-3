@@ -199,7 +199,7 @@ main (int argc, char *argv[])
       // Add left side
       Ptr<Node> left_host_node = DumLeftNode.Get(i);
       Ptr<SimpleChannel> ptpChanL = CreateObject<SimpleChannel> ();
-      ptpChanL->SetAttribute ("Delay", TimeValue (ns3_host_linkLatency));
+      //ptpChanL->SetAttribute ("Delay", TimeValue (ns3_host_linkLatency));
       pointToPointHost.Install(left_host_node, ptpChanL);
       // add the netdev to bridge port
       bridgeLeft->AddBridgePort(pointToPointHost.Install(nodeLeft, ptpChanL).Get(0));
@@ -207,7 +207,7 @@ main (int argc, char *argv[])
       // Add right side
       Ptr<Node> right_host_node = DumRightNode.Get(i);
       Ptr<SimpleChannel> ptpChanR = CreateObject<SimpleChannel> ();
-      ptpChanR->SetAttribute ("Delay", TimeValue (ns3_host_linkLatency));
+      //ptpChanR->SetAttribute ("Delay", TimeValue (ns3_host_linkLatency));
       pointToPointHost.Install(right_host_node, ptpChanR);
       // add the netdev to bridge port
       bridgeRight->AddBridgePort(pointToPointHost.Install(nodeRight, ptpChanR).Get(0));

@@ -108,10 +108,10 @@ SimBricksTraceHelper::PrintPacketToStream (bool manual_eth, bool manual_ip,
       MarkAsIntersting (packet);
     }
 
-  if (not interesting)
-    {
-      return;
-    }
+  //if (not interesting)
+  //  {
+  //    return;
+  //  }
 
   std::ostream &out = *(stream->GetStream ());
   out << prefix;
@@ -252,7 +252,7 @@ SimBricksTraceHelper::EnableAsciiLoggingForCosimNetDevice (Ptr<OutputStreamWrapp
   config_path << config_path_prefix.str () << "/TxPacketToAdapter";
   Config::Connect (config_path.str (),
                    MakeBoundCallback (&SimBricksTraceHelper::DequeueSinkWithContext<false, false>,
-                                      outStream, mark_as_interesting));
+                                      outStream, false));
 
   config_path.str ("");
   config_path << config_path_prefix.str () << "/DropPacket";
