@@ -46,6 +46,9 @@ class Packet;
 class SimpleChannel : public Channel
 {
 public:
+  typedef Callback<Time, const Ptr<Packet>, uint16_t, const Address &, const Address &>
+      JitterCallback;
+
   /**
    * \brief Get the type ID.
    * \return the object TypeId
@@ -72,7 +75,7 @@ public:
    * Attached a net device to the channel.
    *
    * \param device the device to attach to the channel
-   */ 
+   */
   virtual void Add (Ptr<SimpleNetDevice> device);
 
   /**
@@ -97,10 +100,15 @@ public:
   virtual std::size_t GetNDevices (void) const;
   virtual Ptr<NetDevice> GetDevice (std::size_t i) const;
 
+  void SetJitterCallback (JitterCallback jitter_callback);
+
 private:
   Time m_delay; //!< The assigned speed-of-light delay of the channel
-  std::vector<Ptr<SimpleNetDevice> > m_devices; //!< devices connected by the channel
-  std::map<Ptr<SimpleNetDevice>, std::vector<Ptr<SimpleNetDevice> > > m_blackListedDevices; //!< devices blocked on a device
+  std::vector<Ptr<SimpleNetDevice>> m_devices; //!< devices connected by the channel
+  std::map<Ptr<SimpleNetDevice>, std::vector<Ptr<SimpleNetDevice>>>
+      m_blackListedDevices; //!< devices blocked on a device
+
+  JitterCallback m_jitterCallback;
 };
 
 } // namespace ns3

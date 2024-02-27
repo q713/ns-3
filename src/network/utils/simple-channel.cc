@@ -31,18 +31,16 @@ NS_LOG_COMPONENT_DEFINE ("SimpleChannel");
 
 NS_OBJECT_ENSURE_REGISTERED (SimpleChannel);
 
-TypeId 
+TypeId
 SimpleChannel::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::SimpleChannel")
-    .SetParent<Channel> ()
-    .SetGroupName("Network")
-    .AddConstructor<SimpleChannel> ()
-    .AddAttribute ("Delay", "Transmission delay through the channel",
-                   TimeValue (Seconds (0)),
-                   MakeTimeAccessor (&SimpleChannel::m_delay),
-                   MakeTimeChecker ())
-  ;
+  static TypeId tid =
+      TypeId ("ns3::SimpleChannel")
+          .SetParent<Channel> ()
+          .SetGroupName ("Network")
+          .AddConstructor<SimpleChannel> ()
+          .AddAttribute ("Delay", "Transmission delay through the channel", TimeValue (Seconds (0)),
+                         MakeTimeAccessor (&SimpleChannel::m_delay), MakeTimeChecker ());
   return tid;
 }
 
@@ -52,12 +50,12 @@ SimpleChannel::SimpleChannel ()
 }
 
 void
-SimpleChannel::Send (Ptr<Packet> p, uint16_t protocol,
-                     Mac48Address to, Mac48Address from,
+SimpleChannel::Send (Ptr<Packet> p, uint16_t protocol, Mac48Address to, Mac48Address from,
                      Ptr<SimpleNetDevice> sender)
 {
   NS_LOG_FUNCTION (this << p << protocol << to << from << sender);
-  for (std::vector<Ptr<SimpleNetDevice> >::const_iterator i = m_devices.begin (); i != m_devices.end (); ++i)
+  for (std::vector<Ptr<SimpleNetDevice>>::const_iterator i = m_devices.begin ();
+       i != m_devices.end (); ++i)
     {
       Ptr<SimpleNetDevice> tmp = *i;
       if (tmp == sender)
@@ -67,13 +65,20 @@ SimpleChannel::Send (Ptr<Packet> p, uint16_t protocol,
       if (m_blackListedDevices.find (tmp) != m_blackListedDevices.end ())
         {
           if (find (m_blackListedDevices[tmp].begin (), m_blackListedDevices[tmp].end (), sender) !=
-              m_blackListedDevices[tmp].end () )
+              m_blackListedDevices[tmp].end ())
             {
               continue;
             }
         }
-      Simulator::ScheduleWithContext (tmp->GetNode ()->GetId (), m_delay,
-                                      &SimpleNetDevice::Receive, tmp, p->Copy (), protocol, to, from);
+
+      Time delay = m_delay;
+      if (not m_jitterCallback.IsNull ())
+        {
+          delay += m_jitterCallback (p->Copy (), protocol, to, from);
+        }
+
+      Simulator::ScheduleWithContext (tmp->GetNode ()->GetId (), delay, &SimpleNetDevice::Receive,
+                                      tmp, p->Copy (), protocol, to, from);
     }
 }
 
@@ -99,12 +104,19 @@ SimpleChannel::GetDevice (std::size_t i) const
 }
 
 void
+SimpleChannel::SetJitterCallback (JitterCallback jitter_callback)
+{
+  NS_LOG_FUNCTION (this << &jitter_callback);
+  m_jitterCallback = jitter_callback;
+}
+
+void
 SimpleChannel::BlackList (Ptr<SimpleNetDevice> from, Ptr<SimpleNetDevice> to)
 {
   if (m_blackListedDevices.find (to) != m_blackListedDevices.end ())
     {
       if (find (m_blackListedDevices[to].begin (), m_blackListedDevices[to].end (), from) ==
-          m_blackListedDevices[to].end () )
+          m_blackListedDevices[to].end ())
         {
           m_blackListedDevices[to].push_back (from);
         }
@@ -120,14 +132,13 @@ SimpleChannel::UnBlackList (Ptr<SimpleNetDevice> from, Ptr<SimpleNetDevice> to)
 {
   if (m_blackListedDevices.find (to) != m_blackListedDevices.end ())
     {
-      std::vector<Ptr<SimpleNetDevice> >::iterator iter;
+      std::vector<Ptr<SimpleNetDevice>>::iterator iter;
       iter = find (m_blackListedDevices[to].begin (), m_blackListedDevices[to].end (), from);
-      if (iter != m_blackListedDevices[to].end () )
+      if (iter != m_blackListedDevices[to].end ())
         {
           m_blackListedDevices[to].erase (iter);
         }
     }
 }
-
 
 } // namespace ns3
