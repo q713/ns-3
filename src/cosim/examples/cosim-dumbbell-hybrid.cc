@@ -101,7 +101,7 @@ main (int argc, char *argv[])
                 trace_file_path);
   cmd.AddValue ("EnableJitter", "bool flag to determine whether jitter shall be applied",
                 addJitter);
-  cmd.AddFL cmd.Parse (argc, argv);
+  cmd.Parse (argc, argv);
 
   NS_ABORT_MSG_IF (cosimLeftPaths.empty (), "must provide at least one cosim left path");
   NS_ABORT_MSG_IF (cosimRightPaths.empty (), "must provide at least one cosim rigth path");
@@ -152,8 +152,7 @@ main (int argc, char *argv[])
     {
       Ptr<JitterProvider> jitterProvider = CreateObject<JitterProvider> ();
       // TODO: set random variable stream vor jitter provider to create random jitter
-      ptpChan->SetJitterCallback (
-          MakeCallback (&JitterProvider::CalculateNextDelay, jitterProvider));
+      ptpChan->SetJitterCallback ( JitterProvider::CreateCallback (jitterProvider));
     }
 
   SimpleNetDeviceHelper pointToPointSR;

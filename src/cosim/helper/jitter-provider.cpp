@@ -44,9 +44,22 @@ JitterProvider::GetInstanceTypeId (void) const
   return GetTypeId ();
 }
 
+JitterProvider::JitterCallback
+JitterProvider::CreateCallback (Ptr<JitterProvider> provider)
+{
+  NS_ABORT_MSG_IF (provider == 0, "JitterProvider::CreateCallback provider is null");
+
+  JitterProvider *peekedProvider = PeekPointer (provider);
+  JitterProvider::JitterCallback callback =
+      MakeCallback (
+          &JitterProvider::CalculateNextDelay, peekedProvider);
+
+  return callback;
+}
+
 Time
-JitterProvider::CalculateNextDelay (const Ptr<Packet> packet, uint16_t protocol, const Address &to,
-                                    const Address &from)
+JitterProvider::CalculateNextDelay (Ptr<Packet> packet, uint16_t protocol, Address to,
+                                    Address from)
 {
   if (m_jitterRandVar == 0)
     {

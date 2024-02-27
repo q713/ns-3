@@ -46,7 +46,7 @@ class Packet;
 class SimpleChannel : public Channel
 {
 public:
-  typedef Callback<Time, const Ptr<Packet>, uint16_t, const Address &, const Address &>
+  typedef Callback<Time, Ptr<Packet>, uint16_t, Address, Address>
       JitterCallback;
 
   /**

@@ -24,17 +24,27 @@
 #include "ns3/address.h"
 #include "ns3/ptr.h"
 #include "ns3/nstime.h"
+#include "ns3/random-variable-stream.h"
+#include "ns3/log.h"
+#include "ns3/string.h"
+#include "ns3/pointer.h"
+#include "ns3/callback.h"
 
 namespace ns3 {
 
 class JitterProvider : public Object
 {
 public:
+  typedef Callback<Time, Ptr<Packet>, uint16_t, Address, Address>
+      JitterCallback;
+
   static TypeId GetTypeId (void);
   virtual TypeId GetInstanceTypeId (void) const;
 
-  Time CalculateNextDelay (const Ptr<Packet> packet, uint16_t protocol, const Address &to,
-                           const Address &from);
+  static JitterCallback CreateCallback (Ptr<JitterProvider> provider);
+
+  Time CalculateNextDelay (Ptr<Packet> packet, uint16_t protocol, Address to,
+                           Address from);
 
 private:
   Ptr<RandomVariableStream> m_jitterRandVar;
