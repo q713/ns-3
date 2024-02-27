@@ -120,6 +120,7 @@ main (int argc, char *argv[])
   //LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
   //LogComponentEnable ("Queue", LOG_LEVEL_ALL);
   //LogComponentEnable ("TrafficControlLayer", LOG_LEVEL_ALL);
+  LogComponentEnable ("JitterProvider", LOG_LEVEL_ALL);
   //LogComponentEnableAll(LOG_PREFIX_TIME);
   //LogComponentEnableAll(LOG_PREFIX_NODE);
 
