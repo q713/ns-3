@@ -73,7 +73,6 @@ main (int argc, char *argv[])
   std::string trace_file_path = "";
   int num_ns3_host_pairs = 1;
   uint32_t mtu = 1500;
-  bool addJitter = false;
 
   Time flowStartupWindow = MilliSeconds (500);
   Time convergenceTime = MilliSeconds (500);
@@ -81,6 +80,10 @@ main (int argc, char *argv[])
   Time progressInterval = MilliSeconds (500);
   Time tputInterval = Seconds (1);
   Time ns3_hosts_rtt (NanoSeconds (50000)); // 50 us
+
+  bool addJitter = false;
+  Time minJitter = NanoSeconds (0);
+  Time maxJitter = NanoSeconds (50000); // 50 us
 
   CommandLine cmd (__FILE__);
   cmd.AddValue ("LinkLatency", "Propagation delay through link", linkLatency);
@@ -101,6 +104,8 @@ main (int argc, char *argv[])
                 trace_file_path);
   cmd.AddValue ("EnableJitter", "bool flag to determine whether jitter shall be applied",
                 addJitter);
+  cmd.AddValue("MinJitter", "set the minimum jitter time", minJitter);
+  cmd.AddValue("MaxJitter", "set the maximum jitter time", maxJitter);
   cmd.Parse (argc, argv);
 
   NS_ABORT_MSG_IF (cosimLeftPaths.empty (), "must provide at least one cosim left path");
@@ -125,10 +130,10 @@ main (int argc, char *argv[])
   //LogComponentEnableAll(LOG_PREFIX_NODE);
 
   // Configurations for ns3 hosts
-  Config::SetDefault ("ns3::TcpL4Protocol::SocketType", StringValue ("ns3::TcpDctcp"));
-  Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (mtu - 52));
-  Config::SetDefault ("ns3::TcpSocket::DelAckCount", UintegerValue (2));
-  GlobalValue::Bind ("ChecksumEnabled", BooleanValue (true));
+  //Config::SetDefault ("ns3::TcpL4Protocol::SocketType", StringValue ("ns3::TcpDctcp"));
+  //Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (mtu - 52));
+  //Config::SetDefault ("ns3::TcpSocket::DelAckCount", UintegerValue (2));
+  //GlobalValue::Bind ("ChecksumEnabled", BooleanValue (true));
   //GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
 
   NS_LOG_INFO ("Create Nodes");
@@ -151,8 +156,13 @@ main (int argc, char *argv[])
   ptpChan->SetAttribute ("Delay", TimeValue (linkLatency));
   if (addJitter)
     {
+      Ptr<UniformRandomVariable> randVar = CreateObject<UniformRandomVariable> ();
+      randVar->SetAttribute ("Min", DoubleValue (minJitter.GetNanoSeconds ()));
+      randVar->SetAttribute ("Max", DoubleValue (maxJitter.GetNanoSeconds ()));
+
       Ptr<JitterProvider> jitterProvider = CreateObject<JitterProvider> ();
-      // TODO: set random variable stream vor jitter provider to create random jitter
+      jitterProvider->SetAttribute ("JitterRandVar", PointerValue (randVar));
+
       ptpChan->SetJitterCallback ( JitterProvider::CreateCallback (jitterProvider));
     }
 
