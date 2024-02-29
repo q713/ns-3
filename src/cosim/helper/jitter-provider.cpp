@@ -73,7 +73,7 @@ JitterProvider::CalculateNextDelay (Ptr<Packet> packet, uint16_t protocol, Addre
     }
 
   Time delay_nanoseconds = NanoSeconds (m_jitterRandVar->GetInteger ());
-  NS_LOG_FUNCTION ("apply " << delay_nanoseconds << "nanoseconds of jitter to packet " << packet);
+  NS_LOG_FUNCTION ("apply " << delay_nanoseconds << "nanoseconds of jitter to packet " << *packet);
   return delay_nanoseconds;
 }
 
