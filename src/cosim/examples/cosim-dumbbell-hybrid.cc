@@ -156,6 +156,8 @@ main (int argc, char *argv[])
   ptpChan->SetAttribute ("Delay", TimeValue (linkLatency));
   if (addJitter)
     {
+      NS_LOG_INFO ("Add Jitter Provider to channel");
+
       Ptr<UniformRandomVariable> randVar = CreateObject<UniformRandomVariable> ();
       randVar->SetAttribute ("Min", DoubleValue (minJitter.GetNanoSeconds ()));
       randVar->SetAttribute ("Max", DoubleValue (maxJitter.GetNanoSeconds ()));

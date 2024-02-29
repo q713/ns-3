@@ -46,6 +46,8 @@ public:
   Time CalculateNextDelay (Ptr<Packet> packet, uint16_t protocol, Address to,
                            Address from);
 
+  void SetRandomVariableStream(Ptr<RandomVariableStream> randVar);
+
 private:
   Ptr<RandomVariableStream> m_jitterRandVar;
 };

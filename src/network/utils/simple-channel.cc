@@ -74,7 +74,9 @@ SimpleChannel::Send (Ptr<Packet> p, uint16_t protocol, Mac48Address to, Mac48Add
       Time delay = m_delay;
       if (not m_jitterCallback.IsNull ())
         {
-          delay += m_jitterCallback (p->Copy (), protocol, to, from);
+          Time jitter = m_jitterCallback (p->Copy (), protocol, to, from);
+          NS_LOG_INFO ("apply jitter to the current packet: " << jitter);
+          delay += jitter;
         }
 
       Simulator::ScheduleWithContext (tmp->GetNode ()->GetId (), delay, &SimpleNetDevice::Receive,

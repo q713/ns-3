@@ -48,21 +48,27 @@ JitterProvider::JitterCallback
 JitterProvider::CreateCallback (Ptr<JitterProvider> provider)
 {
   NS_ABORT_MSG_IF (provider == 0, "JitterProvider::CreateCallback provider is null");
+  NS_LOG_FUNCTION ("create callback using jitter provider " << provider);
 
-  JitterProvider *peekedProvider = PeekPointer (provider);
   JitterProvider::JitterCallback callback =
-      MakeCallback (
-          &JitterProvider::CalculateNextDelay, peekedProvider);
+      MakeCallback (&JitterProvider::CalculateNextDelay, provider);
 
   return callback;
 }
 
+void
+JitterProvider::SetRandomVariableStream (Ptr<RandomVariableStream> randVar)
+{
+  NS_ABORT_MSG_IF (randVar == 0, "JitterProvider::CreateCallback provider is null");
+  m_jitterRandVar = randVar;
+}
+
 Time
-JitterProvider::CalculateNextDelay (Ptr<Packet> packet, uint16_t protocol, Address to,
-                                    Address from)
+JitterProvider::CalculateNextDelay (Ptr<Packet> packet, uint16_t protocol, Address to, Address from)
 {
   if (m_jitterRandVar == 0)
     {
+      NS_LOG_DEBUG ("JitterProvider::CalculateNextDelay no m_jitterRandVar set");
       return NanoSeconds (0);
     }
 
