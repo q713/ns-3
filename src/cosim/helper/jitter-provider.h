@@ -29,6 +29,9 @@
 #include "ns3/string.h"
 #include "ns3/pointer.h"
 #include "ns3/callback.h"
+#include "ns3/ipv4-header.h"
+
+#include <set>
 
 namespace ns3 {
 
@@ -48,8 +51,11 @@ public:
 
   void SetRandomVariableStream(Ptr<RandomVariableStream> randVar);
 
+  void AddIpAddress(const Ipv4Address &ip_addr);
+
 private:
   Ptr<RandomVariableStream> m_jitterRandVar;
+  std::set<Ipv4Address> m_ipFilter;
 };
 
 } // namespace ns3

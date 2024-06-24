@@ -63,12 +63,33 @@ JitterProvider::SetRandomVariableStream (Ptr<RandomVariableStream> randVar)
   m_jitterRandVar = randVar;
 }
 
+void
+JitterProvider::AddIpAddress(const Ipv4Address &ip_addr) 
+{
+  auto it = m_ipFilter.insert(ip_addr);
+  NS_ABORT_MSG_IF (not it.second, "JitterProvider::AddIpAddress could not add ip address");
+}
+
 Time
 JitterProvider::CalculateNextDelay (Ptr<Packet> packet, uint16_t protocol, Address to, Address from)
 {
   if (m_jitterRandVar == 0)
     {
       NS_LOG_DEBUG ("JitterProvider::CalculateNextDelay no m_jitterRandVar set");
+      return NanoSeconds (0);
+    }
+
+  Ipv4Header header;
+  if (packet->PeekHeader (header) < 1) 
+    {
+      NS_LOG_DEBUG ("JitterProvider::CalculateNextDelay no jitter, no IP header set " << *packet);
+      return NanoSeconds (0);
+    }
+
+  Ipv4Address src_addr = header.GetSource ();
+  if (m_ipFilter.find (src_addr) == m_ipFilter.end ()) 
+    {
+      NS_LOG_DEBUG ("JitterProvider::CalculateNextDelay filtered out packet " << *packet);
       return NanoSeconds (0);
     }
 

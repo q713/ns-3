@@ -71,7 +71,7 @@ main (int argc, char *argv[])
   DataRate linkRate ("10Mb/s");
   double ecnTh = 200000;
   std::string trace_file_path = "";
-  int num_ns3_host_pairs = 1;
+  int num_ns3_host_pairs = 0;
   uint32_t mtu = 1500;
 
   Time flowStartupWindow = MilliSeconds (500);
@@ -82,8 +82,9 @@ main (int argc, char *argv[])
   Time ns3_hosts_rtt (NanoSeconds (50000)); // 50 us
 
   bool addJitter = false;
-  Time minJitter = NanoSeconds (0);
-  Time maxJitter = NanoSeconds (50000); // 50 us
+  Time jitter = NanoSeconds (0);
+  // Time minJitter = NanoSeconds (0);
+  // Time maxJitter = NanoSeconds (50000); // 50 us
 
   CommandLine cmd (__FILE__);
   cmd.AddValue ("LinkLatency", "Propagation delay through link", linkLatency);
@@ -104,8 +105,9 @@ main (int argc, char *argv[])
                 trace_file_path);
   cmd.AddValue ("EnableJitter", "bool flag to determine whether jitter shall be applied",
                 addJitter);
-  cmd.AddValue("MinJitter", "set the minimum jitter time", minJitter);
-  cmd.AddValue("MaxJitter", "set the maximum jitter time", maxJitter);
+  cmd.AddValue("Jitter", "set the minimum jitter time", jitter);
+  // cmd.AddValue("MinJitter", "set the minimum jitter time", minJitter);
+  // cmd.AddValue("MaxJitter", "set the maximum jitter time", maxJitter);
   cmd.Parse (argc, argv);
 
   NS_ABORT_MSG_IF (cosimLeftPaths.empty (), "must provide at least one cosim left path");
@@ -115,19 +117,21 @@ main (int argc, char *argv[])
   auto num_simbricks_host_pairs = cosimLeftPaths.size ();
   auto total_num_host_pairs = num_simbricks_host_pairs + num_ns3_host_pairs;
 
-  //LogComponentEnable("CosimDumbbellHybridExample", LOG_LEVEL_ALL);
-  //LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
-  //LogComponentEnable("BridgeNetDevice", LOG_LEVEL_ALL);
-  //LogComponentEnable("SimpleChannel", LOG_LEVEL_ALL);
-  //LogComponentEnable("SimpleNetDevice", LOG_LEVEL_INFO);
-  //LogComponentEnable ("RedQueueDisc", LOG_LEVEL_ALL);
-  //LogComponentEnable ("DropTailQueue", LOG_LEVEL_ALL);
-  //LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
-  //LogComponentEnable ("Queue", LOG_LEVEL_ALL);
-  //LogComponentEnable ("TrafficControlLayer", LOG_LEVEL_ALL);
-  LogComponentEnable ("JitterProvider", LOG_LEVEL_ALL);
-  //LogComponentEnableAll(LOG_PREFIX_TIME);
-  //LogComponentEnableAll(LOG_PREFIX_NODE);
+  // LogComponentEnable("CosimDumbbellHybridExample", LOG_LEVEL_ALL);
+  // LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
+  // LogComponentEnable("BridgeNetDevice", LOG_LEVEL_ALL);
+  // LogComponentEnable("SimpleChannel", LOG_LEVEL_ALL);
+  // LogComponentEnable("SimpleNetDevice", LOG_LEVEL_INFO);
+  // LogComponentEnable ("RedQueueDisc", LOG_LEVEL_ALL);
+  // LogComponentEnable ("DropTailQueue", LOG_LEVEL_ALL);
+  // LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
+  // LogComponentEnable ("Queue", LOG_LEVEL_ALL);
+  // LogComponentEnable ("TrafficControlLayer", LOG_LEVEL_ALL);
+  // LogComponentEnable ("BulkSendApplication", LOG_LEVEL_ALL); 
+  // LogComponentEnable ("PacketSink", LOG_LEVEL_ALL); 
+  // LogComponentEnable ("JitterProvider", LOG_LEVEL_ALL);
+  // LogComponentEnableAll(LOG_PREFIX_TIME);
+  // LogComponentEnableAll(LOG_PREFIX_NODE);
 
   // Configurations for ns3 hosts
   //Config::SetDefault ("ns3::TcpL4Protocol::SocketType", StringValue ("ns3::TcpDctcp"));
@@ -151,30 +155,35 @@ main (int argc, char *argv[])
   nodeLeft->AddDevice (bridgeLeft);
   nodeRight->AddDevice (bridgeRight);
 
-  NS_LOG_INFO ("Create simple channel link between the two");
-  Ptr<SimpleChannel> ptpChan = CreateObject<SimpleChannel> ();
-  ptpChan->SetAttribute ("Delay", TimeValue (linkLatency));
-  if (addJitter)
-    {
-      NS_LOG_INFO ("Add Jitter Provider to channel");
+  //NS_LOG_INFO ("Create simple channel link between the two");
+  //Ptr<SimpleChannel> ptpChan = CreateObject<SimpleChannel> ();
+  //ptpChan->SetAttribute ("Delay", TimeValue (linkLatency));
+  //if (addJitter)
+  //  {
+  //    NS_LOG_INFO ("Add Jitter Provider to channel");
+  //
+  //    Ptr<ConstantRandomVariable> randVar = CreateObject<ConstantRandomVariable> ();
+  //    randVar->SetAttribute ("Constant", DoubleValue (jitter.GetNanoSeconds ()));
+  //
+  //    // Ptr<UniformRandomVariable> randVar = CreateObject<UniformRandomVariable> ();
+  //    // randVar->SetAttribute ("Min", DoubleValue (minJitter.GetNanoSeconds ()));
+  //    // randVar->SetAttribute ("Max", DoubleValue (maxJitter.GetNanoSeconds ()));
+  //
+  //    Ptr<JitterProvider> jitterProvider = CreateObject<JitterProvider> ();
+  //    jitterProvider->SetAttribute ("JitterRandVar", PointerValue (randVar));
+  //    jitterProvider->AddIpAddress (Ipv4Address{"192.168.64.1"}); 
+  //
+  //    ptpChan->SetJitterCallback ( JitterProvider::CreateCallback (jitterProvider));
+  //  }
 
-      Ptr<UniformRandomVariable> randVar = CreateObject<UniformRandomVariable> ();
-      randVar->SetAttribute ("Min", DoubleValue (minJitter.GetNanoSeconds ()));
-      randVar->SetAttribute ("Max", DoubleValue (maxJitter.GetNanoSeconds ()));
-
-      Ptr<JitterProvider> jitterProvider = CreateObject<JitterProvider> ();
-      jitterProvider->SetAttribute ("JitterRandVar", PointerValue (randVar));
-
-      ptpChan->SetJitterCallback ( JitterProvider::CreateCallback (jitterProvider));
-    }
-
+  // pointToPointSR.SetQueue ("ns3::DevRedQueue", "MaxSize", StringValue ("64MiB"));
+  // pointToPointSR.SetQueue ("ns3::DevRedQueue", "MinTh", DoubleValue (ecnTh));
   SimpleNetDeviceHelper pointToPointSR;
-  pointToPointSR.SetQueue ("ns3::DevRedQueue", "MaxSize", StringValue ("2666p"));
-  pointToPointSR.SetQueue ("ns3::DevRedQueue", "MinTh", DoubleValue (ecnTh));
+  pointToPointSR.SetQueue ("ns3::DropTailQueue<Packet>", "MaxSize", StringValue ("64MiB"));
   pointToPointSR.SetDeviceAttribute ("DataRate", DataRateValue (linkRate));
   pointToPointSR.SetChannelAttribute ("Delay", TimeValue (linkLatency));
 
-  NetDeviceContainer ptpDev = pointToPointSR.Install (nodes, ptpChan);
+  NetDeviceContainer ptpDev = pointToPointSR.Install (nodes); //, ptpChan);
   NS_LOG_INFO ("num node device" << nodeLeft->GetNDevices () << " type: ");
   bridgeLeft->AddBridgePort (nodeLeft->GetDevice (1));
   bridgeRight->AddBridgePort (nodeRight->GetDevice (1));
@@ -220,30 +229,27 @@ main (int argc, char *argv[])
   DumRightDev.reserve (num_ns3_host_pairs);
 
   SimpleNetDeviceHelper pointToPointHost;
-  pointToPointHost.SetDeviceAttribute ("DataRate", StringValue ("10Gbps"));
+  pointToPointHost.SetDeviceAttribute ("DataRate", DataRateValue (linkRate));
   pointToPointHost.SetChannelAttribute ("Delay", TimeValue (linkLatency));
 
-  Time ns3_host_linkLatency = ns3_hosts_rtt / 4;
   for (int i = 0; i < num_ns3_host_pairs; i++)
     {
       // Add left side
-      Ptr<Node> left_host_node = DumLeftNode.Get (i);
-      Ptr<SimpleChannel> ptpChanL = CreateObject<SimpleChannel> ();
-      //ptpChanL->SetAttribute ("Delay", TimeValue (ns3_host_linkLatency));
-      pointToPointHost.Install (left_host_node, ptpChanL);
+      NodeContainer access_left;
+      access_left.Add (DumLeftNode.Get (i));
+      access_left.Add (nodeLeft);
       // add the netdev to bridge port
-      bridgeLeft->AddBridgePort (pointToPointHost.Install (nodeLeft, ptpChanL).Get (0));
+      bridgeLeft->AddBridgePort (pointToPointHost.Install (access_left).Get (1));
 
       // Add right side
-      Ptr<Node> right_host_node = DumRightNode.Get (i);
-      Ptr<SimpleChannel> ptpChanR = CreateObject<SimpleChannel> ();
-      //ptpChanR->SetAttribute ("Delay", TimeValue (ns3_host_linkLatency));
-      pointToPointHost.Install (right_host_node, ptpChanR);
+      NodeContainer access_right;
+      access_right.Add (DumRightNode.Get (i));
+      access_right.Add (nodeRight);
       // add the netdev to bridge port
-      bridgeRight->AddBridgePort (pointToPointHost.Install (nodeRight, ptpChanR).Get (0));
+      bridgeRight->AddBridgePort (pointToPointHost.Install (access_right).Get (1));
     }
 
-  // Network configurations for ns3 hosts
+  //// Network configurations for ns3 hosts
   InternetStackHelper stack;
   stack.Install (DumLeftNode);
   stack.Install (DumRightNode);
@@ -282,18 +288,16 @@ main (int argc, char *argv[])
       Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
       PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", sinkLocalAddress);
       ApplicationContainer sinkApp = sinkHelper.Install (DumRightNode.Get (i));
-      Ptr<PacketSink> packetSink = sinkApp.Get (0)->GetObject<PacketSink> ();
-      RightSinks.push_back (packetSink);
-      sinkApp.Start (Seconds (1));
+      // Ptr<PacketSink> packetSink = sinkApp.Get (0)->GetObject<PacketSink> ();
+      // RightSinks.push_back (packetSink);
 
       Address bulkAddress (InetSocketAddress (ipRight[i].GetAddress (0), port));
       BulkSendHelper bulkHelper ("ns3::TcpSocketFactory", bulkAddress);
+      bulkHelper.SetAttribute ("SendSize", UintegerValue(1500));
       ApplicationContainer bulkApp = bulkHelper.Install (DumLeftNode.Get (i));
-      bulkApp.Start (Seconds (1));
-
-      Ptr<Socket> ns3TcpSocket =
-          Socket::CreateSocket (DumLeftNode.Get (i), TcpSocketFactory::GetTypeId ());
-      sockets.push_back (ns3TcpSocket);
+      // bulkApp.Start (Seconds (0));
+      // bulkApp.Start (Seconds (320));
+      // bulkApp.Stop (Seconds (800));
     }
 
   //Config::SetDefault ("ns3::ConfigStore::Filename",

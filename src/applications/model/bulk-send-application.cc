@@ -181,6 +181,10 @@ void BulkSendApplication::StartApplication (void) // Called at time specified by
       m_socket->GetSockName (from);
       SendData (from, m_peer);
     }
+  else 
+    {
+     NS_LOG_DEBUG ("Failed to connect");
+    }
 }
 
 void BulkSendApplication::StopApplication (void) // Called at time specified by Stop
